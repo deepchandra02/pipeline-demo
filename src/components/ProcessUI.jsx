@@ -9,8 +9,11 @@ export default function ProcessUI({
   fileName,
   results,
   processingData,
+  setCurrentStep,
 }) {
   const [expandedSection, setExpandedSection] = useState(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
+  const [showPdfModal, setShowPdfModal] = useState(false);
 
   // Function to render the step icon based on status
   const renderStepIcon = (status) => {
@@ -85,11 +88,43 @@ export default function ProcessUI({
     }
   };
 
-  // Placeholder for process content - to be expanded later
+  // Detailed process content for each step
   const renderProcessContent = (stepIndex) => {
     switch (stepIndex) {
       case 0: // Upload PDF
-        return (
+        return file ? (
+          <div className="bg-white p-4 rounded-md border border-gray-200">
+            <h4 className="font-medium text-gray-900 mb-4">
+              PDF Document Details
+            </h4>
+            <div className="space-y-3">
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-gray-600">File name:</span>
+                <span className="font-medium">{fileName}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-gray-600">File size:</span>
+                <span className="font-medium">
+                  {(file.size / 1024 / 1024).toFixed(2)} MB
+                </span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-gray-600">File type:</span>
+                <span className="font-medium">{file.type}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-gray-600">Last modified:</span>
+                <span className="font-medium">
+                  {new Date(file.lastModified).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-gray-100">
+                <span className="text-gray-600">Form code:</span>
+                <span className="font-medium">{fileName.split(".")[0]}</span>
+              </div>
+            </div>
+          </div>
+        ) : (
           <div className="bg-gray-50 p-4 rounded-md h-full min-h-[200px] flex items-center justify-center">
             <p className="text-gray-500">Upload PDF file to begin processing</p>
           </div>
@@ -141,26 +176,46 @@ export default function ProcessUI({
       case 0: // Upload PDF
         return file ? (
           <div className="bg-white border border-gray-200 rounded-md p-4 shadow-sm hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-center mb-2">
+            <div className="flex items-center mb-3">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                className="w-8 h-8 text-red-500 mr-2"
+                className="w-12 h-12 text-red-500 mr-3"
               >
                 <path d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0 0 16.5 9h-1.875a1.875 1.875 0 0 1-1.875-1.875V5.25A3.75 3.75 0 0 0 9 1.5H5.625Z" />
                 <path d="M12.971 1.816A5.23 5.23 0 0 1 14.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 0 1 3.434 1.279 9.768 9.768 0 0 0-6.963-6.963Z" />
               </svg>
               <div>
                 <h4 className="font-medium text-gray-900">{fileName}</h4>
-                <p className="text-sm text-gray-500">PDF Document</p>
+                <p className="text-sm text-gray-500">
+                  {(file.size / 1024 / 1024).toFixed(2)} MB • Last modified:{" "}
+                  {new Date(file.lastModified).toLocaleDateString()}
+                </p>
               </div>
             </div>
             <button
-              className="w-full text-center py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium text-gray-700 transition-colors"
-              onClick={() => console.log("Preview PDF")}
+              className="w-full text-center py-3 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium text-gray-700 transition-colors flex items-center justify-center"
+              onClick={() => {
+                if (pdfPreviewUrl) {
+                  setShowPdfModal(true);
+                }
+              }}
             >
-              Preview PDF
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-2"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                <path
+                  fillRule="evenodd"
+                  d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              View PDF
             </button>
           </div>
         ) : (
@@ -286,8 +341,30 @@ export default function ProcessUI({
     );
   };
 
+  // Effect to create and clean up the PDF preview URL
+  useEffect(() => {
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPdfPreviewUrl(url);
+
+      // Clean up the URL when component unmounts or file changes
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    }
+  }, [file]);
+
   return (
     <div className="mt-8">
+      {/* PDF Preview Modal */}
+      {showPdfModal && pdfPreviewUrl && (
+        <PdfPreviewModal
+          pdfUrl={pdfPreviewUrl}
+          fileName={fileName}
+          onClose={() => setShowPdfModal(false)}
+        />
+      )}
+
       {expandedSection !== null && renderExpandedSection()}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -301,13 +378,14 @@ export default function ProcessUI({
               {steps.map((step, index) => (
                 <div
                   key={index}
-                  className={`flex items-start ${
+                  className={`flex items-start cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors ${
                     index < currentStep
                       ? "opacity-70"
                       : index === currentStep
                       ? "opacity-100"
                       : "opacity-50"
                   }`}
+                  onClick={() => setCurrentStep(index)}
                 >
                   {renderStepIcon(statuses[index])}
                   <div className="ml-4 flex-1">

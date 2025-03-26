@@ -234,6 +234,7 @@ export default function App() {
           <ProcessUI
             steps={steps}
             currentStep={currentStep}
+            setCurrentStep={setCurrentStep}
             statuses={stepStatuses}
             file={file}
             fileName={fileName}
