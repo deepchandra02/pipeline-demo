@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import Header from "./components/Header";
 import Hero from "./components/Hero";
-import ProcessFlow from "./components/ProcessFlow";
-import FileProcessor from "./components/FileProcessor";
+import ProcessUI from "./components/ProcessUI";
 import * as apiService from "./api";
 
 export default function App() {
@@ -12,6 +11,7 @@ export default function App() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
+  const [processingData, setProcessingData] = useState({});
   const [stepStatuses, setStepStatuses] = useState({
     0: "idle", // Upload
     1: "idle", // PDF to images
@@ -70,6 +70,7 @@ export default function App() {
     setProcessing(false);
     setError(null);
     setResults(null);
+    setProcessingData({});
     setStepStatuses({
       0: "idle",
       1: "idle",
@@ -95,6 +96,10 @@ export default function App() {
       updateStepStatus(1, "processing");
       const convertResponse = await apiService.convertPdf(formData);
       updateStepStatus(1, "complete");
+      setProcessingData((prevData) => ({
+        ...prevData,
+        convertData: convertResponse.data,
+      }));
       updateCurrentStep();
 
       // Step 2: Section images
@@ -103,6 +108,10 @@ export default function App() {
         convertResponse.data.jobId
       );
       updateStepStatus(2, "complete");
+      setProcessingData((prevData) => ({
+        ...prevData,
+        sectionData: sectionResponse.data,
+      }));
       updateCurrentStep();
 
       // Step 3: Process with GPT-4o
@@ -111,6 +120,10 @@ export default function App() {
         convertResponse.data.jobId
       );
       updateStepStatus(3, "complete");
+      setProcessingData((prevData) => ({
+        ...prevData,
+        gptData: gptResponse.data,
+      }));
       updateCurrentStep();
 
       // Step 4: Structure JSON
@@ -120,6 +133,10 @@ export default function App() {
       );
       updateStepStatus(4, "complete");
       setResults(jsonResponse.data.json);
+      setProcessingData((prevData) => ({
+        ...prevData,
+        jsonData: jsonResponse.data,
+      }));
       updateCurrentStep();
 
       // Step 5: Generate XML
@@ -128,6 +145,10 @@ export default function App() {
         convertResponse.data.jobId
       );
       updateStepStatus(5, "complete");
+      setProcessingData((prevData) => ({
+        ...prevData,
+        xmlData: xmlResponse.data,
+      }));
       updateCurrentStep();
 
       // Step 6: Create package
@@ -137,6 +158,10 @@ export default function App() {
         xmlResponse.data.xmlFilePath
       );
       updateStepStatus(6, "complete");
+      setProcessingData((prevData) => ({
+        ...prevData,
+        packageData: packageResponse.data,
+      }));
       setProcessing(false);
       updateCurrentStep();
     } catch (err) {
@@ -164,27 +189,58 @@ export default function App() {
   }, [currentStep]);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <Header />
       <Hero triggerFileInput={triggerFileInput} processing={processing} />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <ProcessFlow
-          steps={steps}
-          currentStep={currentStep}
-          statuses={stepStatuses}
+        {/* Hidden file input */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="application/pdf"
+          className="hidden"
         />
-        <FileProcessor
-          file={file}
-          fileName={fileName}
-          error={error}
-          processing={processing}
-          results={results}
-          fileInputRef={fileInputRef}
-          handleFileChange={handleFileChange}
-          resetProcess={resetProcess}
-          processFile={processFile}
-          currentStep={currentStep}
-        />
+
+        {error && (
+          <div className="mt-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+            <p>{error}</p>
+          </div>
+        )}
+
+        {/* Conditional button rendering for initial state or when user wants to process */}
+        {currentStep === 1 && !processing && (
+          <div className="mt-6">
+            <button
+              type="button"
+              onClick={processFile}
+              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#e60000] hover:bg-[#e60000]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              Process PDF
+            </button>
+            <button
+              type="button"
+              onClick={resetProcess}
+              className="ml-4 inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Change File
+            </button>
+          </div>
+        )}
+
+        {/* New three-column process UI */}
+        {file && (
+          <ProcessUI
+            steps={steps}
+            currentStep={currentStep}
+            statuses={stepStatuses}
+            file={file}
+            fileName={fileName}
+            results={results}
+            processingData={processingData}
+          />
+        )}
       </div>
     </div>
   );
