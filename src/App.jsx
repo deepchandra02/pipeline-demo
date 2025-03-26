@@ -1,5 +1,4 @@
-// src/App.jsx
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Header from "./components/Header";
 import Hero from "./components/Hero";
 import ProcessFlow from "./components/ProcessFlow";
@@ -13,7 +12,6 @@ export default function App() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [results, setResults] = useState(null);
-  const [downloadUrl, setDownloadUrl] = useState(null);
   const [stepStatuses, setStepStatuses] = useState({
     0: "idle", // Upload
     1: "idle", // PDF to images
@@ -31,12 +29,13 @@ export default function App() {
     "Convert to Images",
     "Section Images",
     "Process with GPT-4o",
-    "Structure JSON",
+    "Generate structured JSON",
     "Generate XML",
     "Create Package",
   ];
 
   const handleFileChange = (e) => {
+    e.preventDefault(); // Prevent default form behavior
     const selectedFile = e.target.files[0];
     if (selectedFile && selectedFile.type === "application/pdf") {
       setFile(selectedFile);
@@ -56,6 +55,10 @@ export default function App() {
     }));
   };
 
+  const updateCurrentStep = () => {
+    setCurrentStep((prev) => prev + 1);
+  };
+
   const triggerFileInput = () => {
     fileInputRef.current.click();
   };
@@ -67,7 +70,6 @@ export default function App() {
     setProcessing(false);
     setError(null);
     setResults(null);
-    setDownloadUrl(null);
     setStepStatuses({
       0: "idle",
       1: "idle",
@@ -87,13 +89,13 @@ export default function App() {
       setError(null);
 
       const formData = new FormData();
-      formData.append("pdf", file);
+      formData.append("file", file);
 
       // Step 1: Convert PDF to images
       updateStepStatus(1, "processing");
       const convertResponse = await apiService.convertPdf(formData);
       updateStepStatus(1, "complete");
-      setCurrentStep(2);
+      updateCurrentStep();
 
       // Step 2: Section images
       updateStepStatus(2, "processing");
@@ -101,17 +103,15 @@ export default function App() {
         convertResponse.data.jobId
       );
       updateStepStatus(2, "complete");
-      setCurrentStep(3);
+      updateCurrentStep();
 
       // Step 3: Process with GPT-4o
       updateStepStatus(3, "processing");
-      const formCode = fileName.split(".")[0]; // Assuming form code is the filename without extension
       const gptResponse = await apiService.processGpt(
-        convertResponse.data.jobId,
-        formCode
+        convertResponse.data.jobId
       );
       updateStepStatus(3, "complete");
-      setCurrentStep(4);
+      updateCurrentStep();
 
       // Step 4: Structure JSON
       updateStepStatus(4, "processing");
@@ -119,8 +119,8 @@ export default function App() {
         convertResponse.data.jobId
       );
       updateStepStatus(4, "complete");
-      setCurrentStep(5);
       setResults(jsonResponse.data.json);
+      updateCurrentStep();
 
       // Step 5: Generate XML
       updateStepStatus(5, "processing");
@@ -128,45 +128,57 @@ export default function App() {
         convertResponse.data.jobId
       );
       updateStepStatus(5, "complete");
-      setCurrentStep(6);
+      updateCurrentStep();
 
       // Step 6: Create package
       updateStepStatus(6, "processing");
       const packageResponse = await apiService.createPackage(
-        convertResponse.data.jobId
+        convertResponse.data.jobId,
+        xmlResponse.data.xmlFilePath
       );
       updateStepStatus(6, "complete");
-
-      setDownloadUrl(apiService.getDownloadUrl(packageResponse.data.packageId));
       setProcessing(false);
+      updateCurrentStep();
     } catch (err) {
+      console.error("Processing error:", err);
       setError(
         `Processing error: ${err.response?.data?.message || err.message}`
       );
       setProcessing(false);
-      updateStepStatus(currentStep, "error");
+
+      setStepStatuses((prev) => {
+        const lastCompletedStep = Object.keys(prev).reduce((last, step) => {
+          if (prev[step] === "complete") {
+            return Math.max(last, step);
+          }
+          return last;
+        }, 0);
+
+        return { ...prev, [lastCompletedStep + 1]: "error" };
+      });
     }
   };
+
+  useEffect(() => {
+    console.log("currentStep updated:", currentStep);
+  }, [currentStep]);
 
   return (
     <div className="min-h-screen bg-white">
       <Header />
       <Hero triggerFileInput={triggerFileInput} processing={processing} />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <ProcessFlow
           steps={steps}
           currentStep={currentStep}
           statuses={stepStatuses}
         />
-
         <FileProcessor
           file={file}
           fileName={fileName}
           error={error}
           processing={processing}
           results={results}
-          downloadUrl={downloadUrl}
           fileInputRef={fileInputRef}
           handleFileChange={handleFileChange}
           resetProcess={resetProcess}

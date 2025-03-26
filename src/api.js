@@ -1,4 +1,3 @@
-// src/api.js
 import axios from "axios";
 
 // Base API configuration
@@ -22,8 +21,8 @@ export const sectionImages = (jobId) => {
   return api.post("/section-images", { jobId });
 };
 
-export const processGpt = (jobId, formCode) => {
-  return api.post("/process-gpt", { jobId, formCode });
+export const processGpt = (jobId) => {
+  return api.post("/process-gpt", { jobId });
 };
 
 export const structureJson = (jobId) => {
@@ -34,8 +33,8 @@ export const generateXml = (jobId) => {
   return api.post("/generate-xml", { jobId });
 };
 
-export const createPackage = (jobId) => {
-  return api.post("/create-package", { jobId });
+export const createPackage = (jobId, xmlFilePath) => {
+  return api.post("/create-package", { jobId, xmlFilePath });
 };
 
 export const getDownloadUrl = (packageId) => {
