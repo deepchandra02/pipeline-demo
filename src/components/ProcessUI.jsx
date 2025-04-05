@@ -1,5 +1,5 @@
 // src/components/ProcessUI.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function ProcessUI({
   steps,
@@ -8,7 +8,6 @@ export default function ProcessUI({
   file,
   fileName,
   results,
-  processingData,
   setCurrentStep,
 }) {
   const [expandedSection, setExpandedSection] = useState(null);
@@ -357,9 +356,9 @@ export default function ProcessUI({
   return (
     <div className="mt-8">
       {/* PDF Preview Modal */}
-      {showPdfModal && pdfPreviewUrl && (
-        <PdfPreviewModal
-          pdfUrl={pdfPreviewUrl}
+      {showPdfModal && file && (
+        <PdfPreviewAlternative
+          file={file}
           fileName={fileName}
           onClose={() => setShowPdfModal(false)}
         />
