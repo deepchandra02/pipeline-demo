@@ -360,7 +360,7 @@ def home():
     return """<!doctype html><html lang="en"><body><div class="container"><h1>Welcome to the Flask API</h1></div></body></html>"""
 
 
-@app.route("/api/images/<job_id>/<page_name>")
+@app.route("/api/images/<job_id>/<path:page_name>")
 def get_image(job_id, page_name):
     # Construct the path to the image file
     image_path = os.path.join(images_directory, job_id, page_name)
@@ -412,10 +412,13 @@ def get_image_list(job_id):
     
     # If directory doesn't exist, try checking if the job ID is part of a directory name
     if not os.path.exists(job_dir) or not os.path.isdir(job_dir):
-        # List all directories in the images directory
+        # Find all directories in images_directory
+        dirs = []
         if os.path.exists(images_directory) and os.path.isdir(images_directory):
-            potential_dirs = [d for d in os.listdir(images_directory) 
-                             if os.path.isdir(os.path.join(images_directory, d)) and job_id in d]
+            dirs = [d for d in os.listdir(images_directory) if os.path.isdir(os.path.join(images_directory, d))]
+            print(f"All available image directories: {dirs}")
+            # Try to find a matching directory based on prefix or contains
+            potential_dirs = [d for d in dirs if job_id in d or d.startswith(job_id[:4])]
             if potential_dirs:
                 job_dir = os.path.join(images_directory, potential_dirs[0])
                 print(f"Found potential matching directory: {job_dir}")
@@ -423,8 +426,15 @@ def get_image_list(job_id):
     # Check if the directory exists
     if os.path.exists(job_dir) and os.path.isdir(job_dir):
         # Get a list of image files in the directory
+        # Recursively walk through subdirectories to find all images
         allowed_extensions = ('.png', '.jpg', '.jpeg')
-        image_files = [f for f in os.listdir(job_dir) if f.lower().endswith(allowed_extensions)]
+        image_files = []
+        for root, dirs, files in os.walk(job_dir):
+            for file in files:
+                if file.lower().endswith(allowed_extensions):
+                    # Store relative path from job_dir
+                    rel_path = os.path.relpath(os.path.join(root, file), job_dir)
+                    image_files.append(rel_path)
         # Debug information
         print(f"Searching for images in: {job_dir}")
         print(f"Found {len(image_files)} images: {image_files}")

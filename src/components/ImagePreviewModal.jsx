@@ -1,5 +1,49 @@
-// src/components/ImagePreviewModal.jsx
-import React from "react";
+import React, { useState, useEffect } from "react";
+
+export default function ImagePreviewModal({ image, onClose, title }) {
+  const [imageSrc, setImageSrc] = useState(image);
+  
+  // Function to try different image extensions if the original doesn't load
+  const tryAlternativeExtensions = (originalSrc) => {
+    // List of extensions to try
+    const extensions = ['.png', '.jpg', '.jpeg'];
+    
+    // Get the base URL without extension
+    const baseSrc = originalSrc.split('.').slice(0, -1).join('.');
+    
+    // Try each extension
+    let loadAttempt = 0;
+    const tryNextExtension = () => {
+      if (loadAttempt >= extensions.length) return; // All attempts failed
+      
+      const newSrc = `${baseSrc}${extensions[loadAttempt]}`;
+      const img = new Image();
+      img.onload = () => {
+        console.log(`Successfully loaded image with ${extensions[loadAttempt]}`);
+        setImageSrc(newSrc);
+      };
+      img.onerror = () => {
+        loadAttempt++;
+        tryNextExtension();
+      };
+      img.src = newSrc;
+    };
+    
+    tryNextExtension();
+  };
+  
+  useEffect(() => {
+    // Check if image exists, if not try alternative extensions
+    const img = new Image();
+    img.onerror = () => {
+      tryAlternativeExtensions(image);
+    };
+    img.src = image;
+    
+    return () => {
+      img.onerror = null;
+    };
+  }, [image]);
 
 export default function ImagePreviewModal({ image, onClose, title }) {
   return (
@@ -32,7 +76,7 @@ export default function ImagePreviewModal({ image, onClose, title }) {
 
         <div className="p-4 bg-gray-100 flex-1 flex flex-col items-center justify-center">
           <img
-            src={image}
+            src={imageSrc}
             alt={title || "Preview"}
             className="max-h-[70vh] max-w-full object-contain"
             onError={(e) => {

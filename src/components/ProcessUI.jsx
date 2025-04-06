@@ -504,10 +504,28 @@ export default function ProcessUI({
                       .then(res => res.json())
                       .then(data => {
                         console.log('Image list response:', data);
-                        if (data.success) {
-                          alert(`${data.count} images available at ${data.path}. View individual images by clicking on thumbnails.`);
+                        if (data.success && data.count > 0) {
+                          alert(`${data.count} images available. View individual images by clicking on thumbnails.`);
+                        } else if (data.success && data.count === 0) {
+                          // Try fetch with just the first 4 characters of jobId (form code)
+                          const formCode = processingData?.convertData?.jobId.substring(0, 4);
+                          console.log('Trying with form code:', formCode);
+                          fetch(`/api/image-list/${formCode}`)
+                            .then(res => res.json())
+                            .then(formData => {
+                              console.log('Form code image search:', formData);
+                              if (formData.success && formData.count > 0) {
+                                alert(`${formData.count} images available using form code. View individual images by clicking on thumbnails.`);
+                              } else {
+                                alert(`No images found at path: ${data.path}\nPlease check server console logs for details.`);
+                              }
+                            })
+                            .catch(err => {
+                              console.error('Error in fallback search:', err);
+                              alert(`No images found. Error in fallback search.`);
+                            });
                         } else {
-                          alert(`Could not retrieve image list. Path: ${data.path}`);
+                          alert(`Could not retrieve image list. Path: ${data.path}\nPlease check server console logs for details.`);
                         }
                       })
                       .catch(err => {
