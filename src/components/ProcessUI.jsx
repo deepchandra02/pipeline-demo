@@ -21,8 +21,8 @@ export default function ProcessUI({
   const startTimeRef = useRef(null);
 
   const getFileExt = (idx) => {
-    // Try different extensions in order of preference
-    return ".jpeg"; // Default to jpeg first, the backend will handle finding the actual file
+    // Default extension, the image error handling will try alternatives if this fails
+    return ".jpeg";
   };
 
   // Handle image preview
@@ -32,6 +32,7 @@ export default function ProcessUI({
       index,
       src: `/api/images/${processingData?.convertData?.jobId}/page_${index + 1}${getFileExt(index)}`,
       title: `Page ${index + 1}`,
+      tryAlternativeExtensions: true // Flag to tell the modal to try alternative extensions if needed
     });
   };
 
@@ -510,26 +511,40 @@ export default function ProcessUI({
                       className="aspect-square bg-gray-100 rounded-md overflow-hidden relative group cursor-pointer"
                       onClick={() => handleImagePreview(idx)}
                     >
-                      {/* Actual image thumbnail */}
+                      {/* Actual image thumbnail - using the same logic as handleImagePreview */}
                       <div
                         className="absolute inset-0 flex items-center justify-center bg-gray-100"
                         style={{ overflow: "hidden" }}
                       >
                         <img
-                          src={`/api/images/${
-                            processingData.convertData.jobId
-                          }/page_${idx + 1}${getFileExt(idx)}`}
+                          src={`/api/images/${processingData.convertData.jobId}/page_${idx + 1}${getFileExt(idx)}`}
                           alt={`Page ${idx + 1}`}
                           className="object-cover h-full w-full"
+                          loading="lazy"
                           onError={(e) => {
-                            // Fallback when image can't be loaded
-                            e.target.style.display = "none";
-                            e.target.parentNode.innerHTML = `<div class="flex flex-col items-center justify-center h-full w-full">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              <span class="text-xs text-gray-500 mt-1">Image not found</span>
-                            </div>`;
+                            // Try different extensions if the default one fails
+                            const extensions = [".jpeg", ".jpg", ".png"];
+                            const currentSrc = e.target.src;
+                            const currentExt = currentSrc.substring(currentSrc.lastIndexOf("."));
+                            const baseUrl = currentSrc.substring(0, currentSrc.lastIndexOf("."));
+                            
+                            // Find the current extension index
+                            const currentExtIndex = extensions.indexOf(currentExt);
+                            
+                            // Try the next extension if available
+                            if (currentExtIndex < extensions.length - 1) {
+                              const nextExt = extensions[currentExtIndex + 1];
+                              e.target.src = `${baseUrl}${nextExt}`;
+                            } else {
+                              // If all extensions fail, show fallback
+                              e.target.style.display = "none";
+                              e.target.parentNode.innerHTML = `<div class="flex flex-col items-center justify-center h-full w-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span class="text-xs text-gray-500 mt-1">Image not found</span>
+                              </div>`;
+                            }
                           }}
                         />
                       </div>

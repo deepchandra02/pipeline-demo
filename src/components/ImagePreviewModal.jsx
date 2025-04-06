@@ -3,51 +3,9 @@ import React, { useState, useEffect } from "react";
 export default function ImagePreviewModal({ image, onClose, title, onNext, onPrevious, hasNext, hasPrevious }) {
   const [imageSrc, setImageSrc] = useState(image);
 
-  // Function to try different image extensions if the original doesn't load
-  const tryAlternativeExtensions = (originalSrc) => {
-    // List of extensions to try
-    const extensions = [".png", ".jpg", ".jpeg"];
-
-    // Get the base URL without extension
-    const baseSrc = originalSrc.split(".").slice(0, -1).join(".");
-
-    // Try each extension
-    let loadAttempt = 0;
-    const tryNextExtension = () => {
-      if (loadAttempt >= extensions.length) return; // All attempts failed
-
-      const newSrc = `${baseSrc}${extensions[loadAttempt]}`;
-      const img = new Image();
-      img.onload = () => {
-        console.log(
-          `Successfully loaded image with ${extensions[loadAttempt]}`
-        );
-        setImageSrc(newSrc);
-      };
-      img.onerror = () => {
-        loadAttempt++;
-        tryNextExtension();
-      };
-      img.src = newSrc;
-    };
-
-    tryNextExtension();
-  };
-
   useEffect(() => {
     // Reset imageSrc when the image prop changes
     setImageSrc(image);
-    
-    // Check if image exists, if not try alternative extensions
-    const img = new Image();
-    img.onerror = () => {
-      tryAlternativeExtensions(image);
-    };
-    img.src = image;
-
-    return () => {
-      img.onerror = null;
-    };
   }, [image]);
 
   return (
@@ -129,17 +87,33 @@ export default function ImagePreviewModal({ image, onClose, title, onNext, onPre
             alt={title || "Preview"}
             className="max-h-[70vh] max-w-full object-contain"
             onError={(e) => {
-              e.target.style.display = "none";
-              // Show error message when image fails to load
-              e.target.parentNode.innerHTML += `
-                <div class="text-center p-6">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <p class="text-gray-600">The image could not be loaded.</p>
-                  <p class="text-gray-500 mt-2 text-sm">Check if the image path is correct and the server is properly configured.</p>
-                </div>
-              `;
+              // Try different extensions if the current one fails
+              const extensions = [".jpeg", ".jpg", ".png"];
+              const currentSrc = e.target.src;
+              const currentExt = currentSrc.substring(currentSrc.lastIndexOf("."));
+              const baseUrl = currentSrc.substring(0, currentSrc.lastIndexOf("."));
+              
+              // Find the current extension index
+              const currentExtIndex = extensions.indexOf(currentExt);
+              
+              // Try the next extension if available
+              if (currentExtIndex < extensions.length - 1) {
+                const nextExt = extensions[currentExtIndex + 1];
+                console.log(`Trying alternative extension: ${nextExt}`);
+                e.target.src = `${baseUrl}${nextExt}`;
+              } else {
+                // If all extensions fail, show error message
+                e.target.style.display = "none";
+                e.target.parentNode.innerHTML += `
+                  <div class="text-center p-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p class="text-gray-600">The image could not be loaded.</p>
+                    <p class="text-gray-500 mt-2 text-sm">Tried all possible extensions (.jpeg, .jpg, .png) but none worked.</p>
+                  </div>
+                `;
+              }
             }}
           />
         </div>
