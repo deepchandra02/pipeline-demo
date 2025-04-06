@@ -521,52 +521,55 @@ export default function ProcessUI({
                         style={{ overflow: "hidden" }}
                       >
                         <img
+                          key={`thumbnail-${idx}`}
                           src={`/api/images/${processingData.convertData.jobId}/page_${idx + 1}${getFileExt(idx)}`}
                           alt={`Page ${idx + 1}`}
                           className="object-cover h-full w-full"
                           loading="lazy"
-                          onLoad={() => console.log(`Thumbnail for page ${idx + 1} loaded successfully`)}
+                          onLoad={(e) => {
+                            console.log(`Thumbnail for page ${idx + 1} loaded successfully`);
+                            // Make sure the image is visible and any previous error handling is cleared
+                            e.target.style.display = "block";
+                          }}
                           onError={(e) => {
                             console.error(`Error loading thumbnail for page ${idx + 1}:`, e);
                             
-                            // Try different extensions if the default one fails
+                            // Get or create retry count
+                            if (!e.target.dataset.retryCount) {
+                              e.target.dataset.retryCount = "0";
+                            }
+                            const retryCount = parseInt(e.target.dataset.retryCount);
+                            e.target.dataset.retryCount = (retryCount + 1).toString();
+                            
+                            // Available extensions to try
                             const extensions = [".jpeg", ".jpg", ".png"];
-                            const currentSrc = e.target.src;
-                            const currentExt = currentSrc.substring(currentSrc.lastIndexOf("."));
-                            const baseUrl = currentSrc.substring(0, currentSrc.lastIndexOf("."));
                             
-                            // Find the current extension index
-                            const currentExtIndex = extensions.indexOf(currentExt);
-                            console.log(`Current extension: ${currentExt}, index: ${currentExtIndex}, available extensions:`, extensions);
-                            
-                            // Try the next extension if available
-                            if (currentExtIndex < extensions.length - 1 && currentExtIndex !== -1) {
-                              const nextExt = extensions[currentExtIndex + 1];
-                              console.log(`Trying next extension: ${nextExt} for page ${idx + 1}`);
-                              e.target.src = `${baseUrl}${nextExt}`;
-                            } else {
-                              // If all extensions fail or none matched, try each extension once more
-                              if (!e.target.dataset.retryCount || parseInt(e.target.dataset.retryCount) < 1) {
-                                // Set retry count
-                                e.target.dataset.retryCount = e.target.dataset.retryCount ? 
-                                  (parseInt(e.target.dataset.retryCount) + 1).toString() : "1";
-                                
-                                // Try with first extension in list regardless of current
-                                const firstExt = extensions[0];
-                                console.log(`Last attempt with extension: ${firstExt} for page ${idx + 1}`);
-                                e.target.src = `${baseUrl.split(".")[0]}${firstExt}`;
-                                return;
-                              }
+                            // Try direct approach with each extension in turn based on retry count
+                            if (retryCount < extensions.length) {
+                              // Get next extension to try based on retry count
+                              const nextExt = extensions[retryCount];
+                              const baseUrl = `/api/images/${processingData.convertData.jobId}/page_${idx + 1}`;
+                              const newSrc = `${baseUrl}${nextExt}`;
                               
-                              // If still failing after retries, show fallback
-                              console.log(`All extensions failed for page ${idx + 1}, showing fallback UI`);
-                              e.target.style.display = "none";
-                              e.target.parentNode.innerHTML = `<div class="flex flex-col items-center justify-center h-full w-full">
+                              console.log(`Retry ${retryCount + 1}/${extensions.length} for page ${idx + 1} with: ${newSrc}`);
+                              e.target.src = newSrc;
+                            }
+                            else {
+                              // If all retries failed, show fallback
+                              console.log(`All ${extensions.length} extensions failed for page ${idx + 1}, showing fallback UI`);
+                              
+                              // Create fallback element
+                              const fallbackDiv = document.createElement('div');
+                              fallbackDiv.className = "flex flex-col items-center justify-center h-full w-full";
+                              fallbackDiv.innerHTML = `
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
-                                <span class="text-xs text-gray-500 mt-1">Image not found</span>
-                              </div>`;
+                                <span class="text-xs text-gray-500 mt-1">Image not found</span>`;
+                              
+                              // Replace image with fallback
+                              e.target.style.display = "none";
+                              e.target.parentNode.appendChild(fallbackDiv);
                             }
                           }}
                         />
