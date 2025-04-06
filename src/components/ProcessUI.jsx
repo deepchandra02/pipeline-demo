@@ -1,5 +1,6 @@
 // src/components/ProcessUI.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import ImagePreviewModal from "./ImagePreviewModal";
 
 export default function ProcessUI({
   steps,
@@ -8,10 +9,68 @@ export default function ProcessUI({
   file,
   fileName,
   results,
+  processingData,
   setCurrentStep,
 }) {
   const [expandedSection, setExpandedSection] = useState(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [simulatedProgress, setSimulatedProgress] = useState(0);
+  const [convertTime, setConvertTime] = useState(null);
+  const startTimeRef = useRef(null);
+
+  // Handle image preview
+  const handleImagePreview = (index) => {
+    // In a real implementation, this would use actual image paths
+    // For now, we're just storing the index
+    setSelectedImage({
+      index,
+      // This would be the actual image URL in a real implementation
+      src: `/api/images/${processingData?.convertData?.jobId}/page_${
+        index + 1
+      }.png`,
+      title: `Page ${index + 1}`,
+    });
+  };
+
+  // Simulate real-time page conversion progress
+  useEffect(() => {
+    if (
+      statuses[1] === "processing" &&
+      processingData?.convertData?.pageCount
+    ) {
+      startTimeRef.current = Date.now();
+
+      const pageCount = processingData.convertData.pageCount;
+      let currentPage = 0;
+
+      const interval = setInterval(() => {
+        if (currentPage < pageCount) {
+          currentPage++;
+          setSimulatedProgress(currentPage);
+
+          if (currentPage === pageCount) {
+            clearInterval(interval);
+            // Calculate total time
+            const endTime = Date.now();
+            const totalTime = ((endTime - startTimeRef.current) / 1000).toFixed(
+              1
+            );
+            setConvertTime(`${totalTime} seconds`);
+          }
+        } else {
+          clearInterval(interval);
+        }
+      }, 500); // Update every 500ms
+
+      return () => clearInterval(interval);
+    }
+
+    // Reset when changing steps or status
+    return () => {
+      setSimulatedProgress(0);
+    };
+  }, [statuses[1], processingData?.convertData?.pageCount]);
 
   // Function to render the step icon based on status
   const renderStepIcon = (status) => {
@@ -129,8 +188,135 @@ export default function ProcessUI({
         );
       case 1: // Convert to Images
         return (
-          <div className="bg-gray-50 p-4 rounded-md h-full min-h-[200px] flex items-center justify-center">
-            <p className="text-gray-500">Converting PDF to images...</p>
+          <div className="bg-white p-4 rounded-md border border-gray-200">
+            <h4 className="font-medium text-gray-900 mb-4">
+              PDF to Images Conversion
+            </h4>
+
+            {processingData?.convertData ? (
+              <div className="space-y-4">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Job ID:</span>
+                  <span className="font-medium">
+                    {processingData.convertData.jobId}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Total Pages:</span>
+                  <span className="font-medium">
+                    {processingData.convertData.pageCount}
+                  </span>
+                </div>
+
+                {/* Simulated page conversion progress */}
+                <div className="mt-4">
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">
+                    Conversion Progress:
+                  </h5>
+                  <div className="space-y-2">
+                    {Array.from({
+                      length: processingData.convertData.pageCount,
+                    }).map((_, idx) => {
+                      // Calculate if this page is "converted" based on how long the step has been processing
+                      const isConverted =
+                        statuses[1] === "complete" || idx < simulatedProgress;
+
+                      return (
+                        <div
+                          key={idx}
+                          className="flex items-center py-2 px-3 bg-gray-50 rounded-md"
+                        >
+                          <div
+                            className={`h-5 w-5 rounded-full flex items-center justify-center mr-3 ${
+                              isConverted ? "bg-green-100" : "bg-yellow-100"
+                            }`}
+                          >
+                            {isConverted ? (
+                              <svg
+                                className="h-3 w-3 text-green-500"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            ) : (
+                              <svg
+                                className="animate-spin h-3 w-3 text-yellow-500"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                ></circle>
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                              </svg>
+                            )}
+                          </div>
+                          <span className="text-sm text-gray-700">
+                            Page {idx + 1} of{" "}
+                            {processingData.convertData.pageCount}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Conversion time (only show when complete) */}
+                {statuses[1] === "complete" && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">
+                        Total Conversion Time:
+                      </span>
+                      <span className="font-medium">
+                        {convertTime || "2.5 seconds"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="py-8 flex items-center justify-center">
+                <svg
+                  className="animate-spin h-8 w-8 text-gray-400 mr-3"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span className="text-gray-500">
+                  Starting conversion process...
+                </span>
+              </div>
+            )}
           </div>
         );
       case 2: // Section Images
@@ -228,8 +414,98 @@ export default function ProcessUI({
         );
       case 1: // Convert to Images
         return (
-          <div className="bg-gray-50 p-4 rounded-md h-full min-h-[150px] flex items-center justify-center">
-            <p className="text-gray-500">Image previews will appear here</p>
+          <div className="bg-white border border-gray-200 rounded-md p-4">
+            <h4 className="font-medium text-gray-900 mb-3">Converted Images</h4>
+
+            {statuses[1] === "complete" ? (
+              <div>
+                {/* Grid of thumbnails */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {Array.from({
+                    length: processingData?.convertData?.pageCount || 0,
+                  }).map((_, idx) => (
+                    <div
+                      key={idx}
+                      className="aspect-square bg-gray-100 rounded-md overflow-hidden relative group cursor-pointer"
+                      onClick={() => handleImagePreview(idx)}
+                    >
+                      {/* Simulated image thumbnail */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-10 w-10 text-gray-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+
+                      {/* Overlay with page number */}
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity flex items-center justify-center">
+                        <span className="px-2 py-1 bg-black bg-opacity-50 text-white rounded text-xs">
+                          Page {idx + 1}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Download all button */}
+                <button className="mt-4 w-full text-center py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium text-gray-700 transition-colors flex items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-2"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Download All Images
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8">
+                <svg
+                  className="animate-spin h-8 w-8 text-gray-400 mb-3"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span className="text-gray-500">
+                  Converting PDF pages to images...
+                </span>
+                {processingData?.convertData?.pageCount && (
+                  <span className="text-xs text-gray-400 mt-2">
+                    Total: {processingData.convertData.pageCount} pages
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         );
       case 2: // Section Images
@@ -360,6 +636,15 @@ export default function ProcessUI({
   return (
     <div className="mt-8">
       {expandedSection !== null && renderExpandedSection()}
+
+      {/* Image Preview Modal */}
+      {selectedImage && (
+        <ImagePreviewModal
+          image={selectedImage.src}
+          title={selectedImage.title}
+          onClose={() => setSelectedImage(null)}
+        />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column - Step progression */}
