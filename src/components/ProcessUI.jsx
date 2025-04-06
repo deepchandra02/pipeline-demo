@@ -19,11 +19,16 @@ export default function ProcessUI({
   const [convertTime, setConvertTime] = useState(null);
   const startTimeRef = useRef(null);
 
+  const getFileExt = (idx) => {
+    // Try different extensions in order of preference
+    return '.jpeg'; // Default to jpeg first, the backend will handle finding the actual file
+  };
+
   // Handle image preview
   const handleImagePreview = (index) => {
     setSelectedImage({
       index,
-      src: `/api/images/${processingData?.convertData?.jobId}/page_${index + 1}.png`,
+      src: `/api/images/${processingData?.convertData?.jobId}/page_${index + 1}${getFileExt(index)}`,
       title: `Page ${index + 1}`,
     });
   };
@@ -464,7 +469,7 @@ export default function ProcessUI({
                       {/* Actual image thumbnail */}
                       <div className="absolute inset-0 flex items-center justify-center bg-gray-100" style={{ overflow: 'hidden' }}>
                         <img
-                          src={`/api/images/${processingData.convertData.jobId}/page_${idx + 1}.png`}
+                          src={`/api/images/${processingData.convertData.jobId}/page_${idx + 1}${getFileExt(idx)}`}
                           alt={`Page ${idx + 1}`}
                           className="object-cover h-full w-full"
                           onError={(e) => {

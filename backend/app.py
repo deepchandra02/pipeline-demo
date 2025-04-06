@@ -365,13 +365,17 @@ def get_image(job_id, page_name):
     # Construct the path to the image file
     image_path = os.path.join(images_directory, job_id, page_name)
     
+    # Get correct mime type based on extension
+    file_ext = os.path.splitext(page_name)[1].lower()
+    mime_type = 'image/jpeg' if file_ext in ('.jpg', '.jpeg') else 'image/png'
+    
     # Debug information
     print(f"Requested image: {image_path}")
     print(f"File exists: {os.path.exists(image_path)}")
     
     # Check if the file exists
     if os.path.exists(image_path):
-        return send_file(image_path, mimetype='image/png')
+        return send_file(image_path, mimetype=mime_type)
     else:
         # Try to find the image with a different pattern
         # Sometimes the page names might follow a different format
@@ -383,13 +387,18 @@ def get_image(job_id, page_name):
                 print(f"Files in directory {directory}: {files}")
                 
                 # Try to find a file that might match by name pattern
-                page_num = page_name.replace('page_', '').replace('.png', '')
-                potential_matches = [f for f in files if page_num in f and f.endswith('.png')]
+                page_num = page_name.replace('page_', '').split('.')[0]
+                allowed_extensions = ('.png', '.jpg', '.jpeg')
+                potential_matches = [f for f in files 
+                                   if page_num in f and any(f.lower().endswith(ext) for ext in allowed_extensions)]
                 
                 if potential_matches:
                     alternative_path = os.path.join(directory, potential_matches[0])
                     print(f"Found alternative file: {alternative_path}")
-                    return send_file(alternative_path, mimetype='image/png')
+                    # Determine the mime type based on file extension
+                    file_ext = os.path.splitext(alternative_path)[1].lower()
+                    mime_type = 'image/jpeg' if file_ext in ('.jpg', '.jpeg') else 'image/png'
+                    return send_file(alternative_path, mimetype=mime_type)
         except Exception as e:
             print(f"Error in file lookup: {str(e)}")
             
@@ -414,7 +423,8 @@ def get_image_list(job_id):
     # Check if the directory exists
     if os.path.exists(job_dir) and os.path.isdir(job_dir):
         # Get a list of image files in the directory
-        image_files = [f for f in os.listdir(job_dir) if f.endswith('.png')]
+        allowed_extensions = ('.png', '.jpg', '.jpeg')
+        image_files = [f for f in os.listdir(job_dir) if f.lower().endswith(allowed_extensions)]
         # Debug information
         print(f"Searching for images in: {job_dir}")
         print(f"Found {len(image_files)} images: {image_files}")
