@@ -10,31 +10,79 @@ const api = axios.create({
 
 // API endpoints
 export const convertPdf = (formData) => {
+  const startTime = Date.now();
   return api.post("/convert-pdf", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
+  }).then(response => {
+    // If backend doesn't provide conversion time, calculate it on the frontend
+    if (!response.data.conversionTime) {
+      const endTime = Date.now();
+      response.data.conversionTime = ((endTime - startTime) / 1000).toFixed(1);
+    }
+    return response;
   });
 };
 
 export const sectionImages = (jobId) => {
-  return api.post("/section-images", { jobId });
+  const startTime = Date.now();
+  return api.post("/section-images", { jobId }).then(response => {
+    // If backend doesn't provide section time, calculate it on the frontend
+    if (!response.data.sectionTime) {
+      const endTime = Date.now();
+      response.data.sectionTime = ((endTime - startTime) / 1000).toFixed(1);
+    }
+    return response;
+  });
 };
 
 export const processGpt = (jobId) => {
-  return api.post("/process-gpt", { jobId });
+  const startTime = Date.now();
+  return api.post("/process-gpt", { jobId }).then(response => {
+    // Calculate processing time if not provided
+    if (!response.data.processingTime) {
+      const endTime = Date.now();
+      response.data.processingTime = ((endTime - startTime) / 1000).toFixed(1);
+    }
+    return response;
+  });
 };
 
 export const structureJson = (jobId) => {
-  return api.post("/structure-json", { jobId });
+  const startTime = Date.now();
+  return api.post("/structure-json", { jobId }).then(response => {
+    // Calculate structuring time if not provided
+    if (!response.data.structureTime) {
+      const endTime = Date.now();
+      response.data.structureTime = ((endTime - startTime) / 1000).toFixed(1);
+    }
+    return response;
+  });
 };
 
 export const generateXml = (jobId) => {
-  return api.post("/generate-xml", { jobId });
+  const startTime = Date.now();
+  return api.post("/generate-xml", { jobId }).then(response => {
+    // Calculate generation time if not provided
+    if (!response.data.generationTime) {
+      const endTime = Date.now();
+      response.data.generationTime = ((endTime - startTime) / 1000).toFixed(1);
+    }
+    return response;
+  });
 };
 
 export const createPackage = (jobId, xmlFilePath) => {
-  return api.post("/create-package", { jobId, xmlFilePath });
+  const startTime = Date.now();
+  return api.post("/create-package", { jobId, xmlFilePath }).then(response => {
+    // Calculate packaging time if not provided
+    if (!response.data.packageTime) {
+      const endTime = Date.now();
+      response.data.packageTime = ((endTime - startTime) / 1000).toFixed(1);
+    }
+    return response;
+  });
 };
 
 export const getDownloadUrl = (packageId) => {

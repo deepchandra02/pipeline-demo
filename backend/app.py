@@ -77,13 +77,17 @@ def convert_pdf():
 
     job_id = os.path.splitext(filename)[0]
     try:
+        start_time = datetime.datetime.now()
         images_folder, page_count = pdf_to_images(pdf_path, images_directory)
+        end_time = datetime.datetime.now()
+        conversion_time = (end_time - start_time).total_seconds()
         return jsonify(
             {
                 "success": True,
                 # "images_folder": images_folder,
                 "jobId": job_id,
                 "pageCount": page_count,
+                "conversionTime": round(conversion_time, 1),
                 "message": "PDF successfully converted to images",
             }
         )
@@ -103,13 +107,17 @@ def section_images():
     images_folder = os.path.join(images_directory, job_id)
 
     try:
+        start_time = datetime.datetime.now()
         sections_directory = process_form_images(images_folder)
+        end_time = datetime.datetime.now()
+        section_time = (end_time - start_time).total_seconds()
         section_count = len(os.listdir(sections_directory))
         return jsonify(
             {
                 "success": True,
                 "jobId": job_id,
                 "sectionCount": section_count,
+                "sectionTime": round(section_time, 1),
                 "message": "Images successfully sectioned",
             }
         )
