@@ -22,15 +22,19 @@ export default function ProcessUI({
 
   const getFileExt = (idx) => {
     // Default extension, the image error handling will try alternatives if this fails
+    console.log(`Getting file extension for image index ${idx}`);
     return ".jpeg";
   };
 
   // Handle image preview
   const handleImagePreview = (index) => {
+    console.log(`Previewing image ${index + 1}`);
     setCurrentImageIndex(index);
+    const imageSrc = `/api/images/${processingData?.convertData?.jobId}/page_${index + 1}${getFileExt(index)}`;
+    console.log(`Image preview source path: ${imageSrc}`);
     setSelectedImage({
       index,
-      src: `/api/images/${processingData?.convertData?.jobId}/page_${index + 1}${getFileExt(index)}`,
+      src: imageSrc,
       title: `Page ${index + 1}`,
       tryAlternativeExtensions: true // Flag to tell the modal to try alternative extensions if needed
     });
@@ -521,7 +525,10 @@ export default function ProcessUI({
                           alt={`Page ${idx + 1}`}
                           className="object-cover h-full w-full"
                           loading="lazy"
+                          onLoad={() => console.log(`Thumbnail for page ${idx + 1} loaded successfully`)}
                           onError={(e) => {
+                            console.error(`Error loading thumbnail for page ${idx + 1}:`, e);
+                            
                             // Try different extensions if the default one fails
                             const extensions = [".jpeg", ".jpg", ".png"];
                             const currentSrc = e.target.src;
@@ -530,13 +537,29 @@ export default function ProcessUI({
                             
                             // Find the current extension index
                             const currentExtIndex = extensions.indexOf(currentExt);
+                            console.log(`Current extension: ${currentExt}, index: ${currentExtIndex}, available extensions:`, extensions);
                             
                             // Try the next extension if available
-                            if (currentExtIndex < extensions.length - 1) {
+                            if (currentExtIndex < extensions.length - 1 && currentExtIndex !== -1) {
                               const nextExt = extensions[currentExtIndex + 1];
+                              console.log(`Trying next extension: ${nextExt} for page ${idx + 1}`);
                               e.target.src = `${baseUrl}${nextExt}`;
                             } else {
-                              // If all extensions fail, show fallback
+                              // If all extensions fail or none matched, try each extension once more
+                              if (!e.target.dataset.retryCount || parseInt(e.target.dataset.retryCount) < 1) {
+                                // Set retry count
+                                e.target.dataset.retryCount = e.target.dataset.retryCount ? 
+                                  (parseInt(e.target.dataset.retryCount) + 1).toString() : "1";
+                                
+                                // Try with first extension in list regardless of current
+                                const firstExt = extensions[0];
+                                console.log(`Last attempt with extension: ${firstExt} for page ${idx + 1}`);
+                                e.target.src = `${baseUrl.split(".")[0]}${firstExt}`;
+                                return;
+                              }
+                              
+                              // If still failing after retries, show fallback
+                              console.log(`All extensions failed for page ${idx + 1}, showing fallback UI`);
                               e.target.style.display = "none";
                               e.target.parentNode.innerHTML = `<div class="flex flex-col items-center justify-center h-full w-full">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
