@@ -40,12 +40,3 @@ export const createPackage = (jobId, xmlFilePath) => {
 export const getDownloadUrl = (packageId) => {
   return `/api/download/${packageId}`;
 };
-
-export const getSectionedImages = (jobId) => {
-  return api.get(`/sectioned-images/${jobId}`);
-};
-
-// Get a specific sectioned image
-export const getSectionedImage = (jobId, sectionName) => {
-  return `/api/sectioned-image/${jobId}/${sectionName}`;
-};
