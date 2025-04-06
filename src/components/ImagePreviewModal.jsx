@@ -35,6 +35,9 @@ export default function ImagePreviewModal({ image, onClose, title, onNext, onPre
   };
 
   useEffect(() => {
+    // Reset imageSrc when the image prop changes
+    setImageSrc(image);
+    
     // Check if image exists, if not try alternative extensions
     const img = new Image();
     img.onerror = () => {
@@ -53,7 +56,7 @@ export default function ImagePreviewModal({ image, onClose, title, onNext, onPre
       {hasPrevious && (
         <button
           onClick={onPrevious}
-          className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-25 hover:bg-opacity-50 p-2 rounded-full text-white z-10 transition-all"
+          className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-gray-800 bg-opacity-70 hover:bg-opacity-90 p-3 rounded-full text-white z-10 transition-all shadow-lg"
           aria-label="Previous image"
         >
           <svg
@@ -62,11 +65,11 @@ export default function ImagePreviewModal({ image, onClose, title, onNext, onPre
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
+            strokeWidth={2.5}
           >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
               d="M15 19l-7-7 7-7"
             />
           </svg>
@@ -75,7 +78,7 @@ export default function ImagePreviewModal({ image, onClose, title, onNext, onPre
       {hasNext && (
         <button
           onClick={onNext}
-          className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-25 hover:bg-opacity-50 p-2 rounded-full text-white z-10 transition-all"
+          className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-gray-800 bg-opacity-70 hover:bg-opacity-90 p-3 rounded-full text-white z-10 transition-all shadow-lg"
           aria-label="Next image"
         >
           <svg
@@ -84,11 +87,11 @@ export default function ImagePreviewModal({ image, onClose, title, onNext, onPre
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
+            strokeWidth={2.5}
           >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              strokeWidth={2}
               d="M9 5l7 7-7 7"
             />
           </svg>
