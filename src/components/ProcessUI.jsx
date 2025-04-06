@@ -21,14 +21,9 @@ export default function ProcessUI({
 
   // Handle image preview
   const handleImagePreview = (index) => {
-    // In a real implementation, this would use actual image paths
-    // For now, we're just storing the index
     setSelectedImage({
       index,
-      // This would be the actual image URL in a real implementation
-      src: `/api/images/${processingData?.convertData?.jobId}/page_${
-        index + 1
-      }.png`,
+      src: `/api/images/${processingData?.convertData?.jobId}/page_${index + 1}.png`,
       title: `Page ${index + 1}`,
     });
   };
@@ -466,22 +461,23 @@ export default function ProcessUI({
                       className="aspect-square bg-gray-100 rounded-md overflow-hidden relative group cursor-pointer"
                       onClick={() => handleImagePreview(idx)}
                     >
-                      {/* Simulated image thumbnail */}
-                      <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-10 w-10 text-gray-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
+                      {/* Actual image thumbnail */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100" style={{ overflow: 'hidden' }}>
+                        <img
+                          src={`/api/images/${processingData.convertData.jobId}/page_${idx + 1}.png`}
+                          alt={`Page ${idx + 1}`}
+                          className="object-cover h-full w-full"
+                          onError={(e) => {
+                            // Fallback when image can't be loaded
+                            e.target.style.display = 'none';
+                            e.target.parentNode.innerHTML = `<div class="flex flex-col items-center justify-center h-full w-full">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span class="text-xs text-gray-500 mt-1">Image not found</span>
+                            </div>`;
+                          }}
+                        />
                       </div>
 
                       {/* Overlay with page number */}
@@ -494,21 +490,49 @@ export default function ProcessUI({
                   ))}
                 </div>
 
-                {/* Download all button */}
-                <button className="mt-4 w-full text-center py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium text-gray-700 transition-colors flex items-center justify-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-2"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
+                {/* View all images button */}
+                <button 
+                  className="mt-4 w-full text-center py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium text-gray-700 transition-colors flex items-center justify-center"
+                  onClick={() => {
+                    // Fetch the list of images for this job and open them in a gallery view
+                    fetch(`/api/image-list/${processingData?.convertData?.jobId}`)
+                      .then(res => res.json())
+                      .then(data => {
+                        if (data.success) {
+                          // Show a simple alert with image count for now
+                          // In a real app, you might open a gallery modal
+                          alert(`${data.count} images available. View individual images by clicking on thumbnails.`);
+                        } else {
+                          alert('Could not retrieve image list.');
+                        }
+                      })
+                      .catch(err => {
+                        console.error('Error fetching image list:', err);
+                        alert('Error retrieving images.');
+                      });
+                  }}
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-4 w-4 mr-2" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                      clipRule="evenodd"
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" 
+                    />
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" 
                     />
                   </svg>
-                  Download All Images
+                  View All Images
                 </button>
               </div>
             ) : (

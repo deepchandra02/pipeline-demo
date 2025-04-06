@@ -358,5 +358,35 @@ def home():
     return """<!doctype html><html lang="en"><body><div class="container"><h1>Welcome to the Flask API</h1></div></body></html>"""
 
 
+@app.route("/api/images/<job_id>/<page_name>")
+def get_image(job_id, page_name):
+    # Construct the path to the image file
+    image_path = os.path.join(images_directory, job_id, page_name)
+    
+    # Check if the file exists
+    if os.path.exists(image_path):
+        return send_file(image_path, mimetype='image/png')
+    else:
+        return jsonify({'error': 'Image not found'}), 404
+
+
+@app.route("/api/image-list/<job_id>")
+def get_image_list(job_id):
+    # Construct the path to the job's image directory
+    job_dir = os.path.join(images_directory, job_id)
+    
+    # Check if the directory exists
+    if os.path.exists(job_dir) and os.path.isdir(job_dir):
+        # Get a list of image files in the directory
+        image_files = [f for f in os.listdir(job_dir) if f.endswith('.png')]
+        return jsonify({
+            'success': True,
+            'images': image_files,
+            'count': len(image_files)
+        })
+    else:
+        return jsonify({'error': 'Directory not found'}), 404
+
+
 if __name__ == "__main__":
     app.run(debug=True)
