@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-export default function ImagePreviewModal({ image, onClose, title }) {
+export default function ImagePreviewModal({ image, onClose, title, onNext, onPrevious, hasNext, hasPrevious }) {
   const [imageSrc, setImageSrc] = useState(image);
 
   // Function to try different image extensions if the original doesn't load
@@ -49,6 +49,51 @@ export default function ImagePreviewModal({ image, onClose, title }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+      {/* Navigation buttons */}
+      {hasPrevious && (
+        <button
+          onClick={onPrevious}
+          className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-25 hover:bg-opacity-50 p-2 rounded-full text-white z-10 transition-all"
+          aria-label="Previous image"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-8 w-8"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </button>
+      )}
+      {hasNext && (
+        <button
+          onClick={onNext}
+          className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-25 hover:bg-opacity-50 p-2 rounded-full text-white z-10 transition-all"
+          aria-label="Next image"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-8 w-8"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </button>
+      )}
       <div className="bg-white rounded-lg max-w-4xl w-full flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900">

@@ -15,6 +15,7 @@ export default function ProcessUI({
   const [expandedSection, setExpandedSection] = useState(null);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [simulatedProgress, setSimulatedProgress] = useState(0);
   const [convertTime, setConvertTime] = useState(null);
   const startTimeRef = useRef(null);
@@ -26,13 +27,32 @@ export default function ProcessUI({
 
   // Handle image preview
   const handleImagePreview = (index) => {
+    setCurrentImageIndex(index);
     setSelectedImage({
       index,
-      src: `/api/images/${processingData?.convertData?.jobId}/page_${
-        index + 1
-      }${getFileExt(index)}`,
+      src: `/api/images/${processingData?.convertData?.jobId}/page_${index + 1}${getFileExt(index)}`,
       title: `Page ${index + 1}`,
     });
+  };
+
+  // Navigation functions for image preview
+  const handleNextImage = () => {
+    if (currentImageIndex < (processingData?.convertData?.pageCount || 0) - 1) {
+      handleImagePreview(currentImageIndex + 1);
+    }
+  };
+
+  const handlePreviousImage = () => {
+    if (currentImageIndex > 0) {
+      handleImagePreview(currentImageIndex - 1);
+    }
+  };
+
+  // Handle "View All Images" button click
+  const handleViewAllImages = () => {
+    if (processingData?.convertData?.pageCount > 0) {
+      handleImagePreview(0); // Start with the first image
+    }
   };
 
   // Handle real or simulated page conversion progress
@@ -525,7 +545,10 @@ export default function ProcessUI({
                 </div>
 
                 {/* View all images button */}
-                <button className="mt-4 w-full text-center py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium text-gray-700 transition-colors flex items-center justify-center">
+                <button 
+                  onClick={handleViewAllImages}
+                  className="mt-4 w-full text-center py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium text-gray-700 transition-colors flex items-center justify-center"
+                >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-4 w-4 mr-2"
@@ -718,6 +741,10 @@ export default function ProcessUI({
           image={selectedImage.src}
           title={selectedImage.title}
           onClose={() => setSelectedImage(null)}
+          onNext={handleNextImage}
+          onPrevious={handlePreviousImage}
+          hasNext={currentImageIndex < (processingData?.convertData?.pageCount || 0) - 1}
+          hasPrevious={currentImageIndex > 0}
         />
       )}
 
