@@ -13,9 +13,11 @@ from utils.packager import packager
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
-pdfs_directory = "pipeline-ui-demo/backend/pdfs_to_be_converted"
-images_directory = "pipeline-ui-demo/backend/images_of_pdfs"
-json_outputs = "pipeline-ui-demo/backend/json_outputs"
+# Define base directories
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+pdfs_directory = os.path.join(base_dir, "backend", "pdfs_to_be_converted")
+images_directory = os.path.join(base_dir, "backend", "images_of_pdfs")
+json_outputs = os.path.join(base_dir, "backend", "json_outputs")
 
 # Ensure the directories exist
 if not os.path.exists(images_directory):
@@ -363,11 +365,35 @@ def get_image(job_id, page_name):
     # Construct the path to the image file
     image_path = os.path.join(images_directory, job_id, page_name)
     
+    # Debug information
+    print(f"Requested image: {image_path}")
+    print(f"File exists: {os.path.exists(image_path)}")
+    
     # Check if the file exists
     if os.path.exists(image_path):
         return send_file(image_path, mimetype='image/png')
     else:
-        return jsonify({'error': 'Image not found'}), 404
+        # Try to find the image with a different pattern
+        # Sometimes the page names might follow a different format
+        try:
+            # List all files in the directory
+            directory = os.path.dirname(image_path)
+            if os.path.exists(directory):
+                files = os.listdir(directory)
+                print(f"Files in directory {directory}: {files}")
+                
+                # Try to find a file that might match by name pattern
+                page_num = page_name.replace('page_', '').replace('.png', '')
+                potential_matches = [f for f in files if page_num in f and f.endswith('.png')]
+                
+                if potential_matches:
+                    alternative_path = os.path.join(directory, potential_matches[0])
+                    print(f"Found alternative file: {alternative_path}")
+                    return send_file(alternative_path, mimetype='image/png')
+        except Exception as e:
+            print(f"Error in file lookup: {str(e)}")
+            
+        return jsonify({'error': 'Image not found', 'path': image_path}), 404
 
 
 @app.route("/api/image-list/<job_id>")
@@ -375,17 +401,43 @@ def get_image_list(job_id):
     # Construct the path to the job's image directory
     job_dir = os.path.join(images_directory, job_id)
     
+    # If directory doesn't exist, try checking if the job ID is part of a directory name
+    if not os.path.exists(job_dir) or not os.path.isdir(job_dir):
+        # List all directories in the images directory
+        if os.path.exists(images_directory) and os.path.isdir(images_directory):
+            potential_dirs = [d for d in os.listdir(images_directory) 
+                             if os.path.isdir(os.path.join(images_directory, d)) and job_id in d]
+            if potential_dirs:
+                job_dir = os.path.join(images_directory, potential_dirs[0])
+                print(f"Found potential matching directory: {job_dir}")
+    
     # Check if the directory exists
     if os.path.exists(job_dir) and os.path.isdir(job_dir):
         # Get a list of image files in the directory
         image_files = [f for f in os.listdir(job_dir) if f.endswith('.png')]
+        # Debug information
+        print(f"Searching for images in: {job_dir}")
+        print(f"Found {len(image_files)} images: {image_files}")
         return jsonify({
             'success': True,
             'images': image_files,
-            'count': len(image_files)
+            'count': len(image_files),
+            'path': job_dir
         })
     else:
-        return jsonify({'error': 'Directory not found'}), 404
+        # Debug information
+        print(f"Directory not found: {job_dir}")
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Images directory: {images_directory}")
+        # Try to list parent directory contents
+        parent_dir = os.path.dirname(job_dir)
+        if os.path.exists(parent_dir):
+            print(f"Contents of parent directory {parent_dir}: {os.listdir(parent_dir)}")
+        return jsonify({
+            'success': False,
+            'error': 'Directory not found',
+            'path': job_dir
+        }), 404
 
 
 if __name__ == "__main__":

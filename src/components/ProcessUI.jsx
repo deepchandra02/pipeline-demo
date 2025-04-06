@@ -498,12 +498,11 @@ export default function ProcessUI({
                     fetch(`/api/image-list/${processingData?.convertData?.jobId}`)
                       .then(res => res.json())
                       .then(data => {
+                        console.log('Image list response:', data);
                         if (data.success) {
-                          // Show a simple alert with image count for now
-                          // In a real app, you might open a gallery modal
-                          alert(`${data.count} images available. View individual images by clicking on thumbnails.`);
+                          alert(`${data.count} images available at ${data.path}. View individual images by clicking on thumbnails.`);
                         } else {
-                          alert('Could not retrieve image list.');
+                          alert(`Could not retrieve image list. Path: ${data.path}`);
                         }
                       })
                       .catch(err => {
