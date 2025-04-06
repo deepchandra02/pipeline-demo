@@ -1,6 +1,7 @@
 // src/components/ProcessUI.jsx
 import { useState, useEffect, useRef } from "react";
 import ImagePreviewModal from "./ImagePreviewModal";
+import * as apiService from "../api";
 
 export default function ProcessUI({
   steps,
@@ -17,20 +18,27 @@ export default function ProcessUI({
   const [selectedImage, setSelectedImage] = useState(null);
   const [simulatedProgress, setSimulatedProgress] = useState(0);
   const [convertTime, setConvertTime] = useState(null);
+  const [sectionedImages, setSectionedImages] = useState([]);
   const startTimeRef = useRef(null);
 
   // Handle image preview
-  const handleImagePreview = (index) => {
-    // In a real implementation, this would use actual image paths
-    // For now, we're just storing the index
-    setSelectedImage({
-      index,
-      // This would be the actual image URL in a real implementation
-      src: `/api/images/${processingData?.convertData?.jobId}/page_${
-        index + 1
-      }.png`,
-      title: `Page ${index + 1}`,
-    });
+  const handleImagePreview = (index, sectionPath = null) => {
+    // For regular page images
+    if (sectionPath === null) {
+      setSelectedImage({
+        index,
+        src: `/api/images/${processingData?.convertData?.jobId}/page_${index + 1}.png`,
+        title: `Page ${index + 1}`,
+      });
+    } else {
+      // For sectioned images
+      const imageSrc = apiService.getSectionedImage(processingData?.convertData?.jobId, sectionPath);
+      setSelectedImage({
+        index,
+        src: imageSrc,
+        title: `Section ${index + 1}`,
+      });
+    }
   };
 
   // Simulate real-time page conversion progress
@@ -457,22 +465,7 @@ export default function ProcessUI({
                   ))}
                 </div>
 
-                {/* Download all button */}
-                <button className="mt-4 w-full text-center py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium text-gray-700 transition-colors flex items-center justify-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-2"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Download All Images
-                </button>
+                {/* Download button removed */}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-8">
@@ -512,20 +505,78 @@ export default function ProcessUI({
         return (
           <div className="bg-white border border-gray-200 rounded-md p-4">
             <h4 className="font-medium text-gray-900 mb-3">Sectioned Images</h4>
-            <div className="grid grid-cols-3 gap-2">
-              {/* Placeholder for sectioned image previews */}
-              {[1, 2, 3, 4, 5, 6].map((item) => (
-                <div
-                  key={item}
-                  className="aspect-square bg-gray-100 rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
-                  onClick={() =>
-                    setExpandedSection(item === expandedSection ? null : item)
-                  }
+            {statuses[2] === "complete" ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {/* Dynamic sectioned image previews */}
+                {sectionedImages.length > 0 ? 
+                  sectionedImages.map((section, idx) => {
+                  return (
+                    <div
+                      key={idx}
+                      className="aspect-square bg-gray-100 rounded-md overflow-hidden relative group cursor-pointer"
+                      onClick={() => handleImagePreview(idx, section.filename.replace('.png', ''))}
+                    >
+                      {/* Placeholder for section thumbnail */}
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-200">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-10 w-10 text-gray-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+                      {/* Section label overlay */}
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity flex items-center justify-center">
+                        <span className="px-2 py-1 bg-black bg-opacity-50 text-white rounded text-xs">
+                          Section {idx + 1}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }) : (
+                  <div className="col-span-3 py-4 text-center text-gray-500">
+                    No sectioned images available
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8">
+                <svg
+                  className="animate-spin h-8 w-8 text-gray-400 mb-3"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
                 >
-                  <span className="text-xs text-gray-500">Section {item}</span>
-                </div>
-              ))}
-            </div>
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span className="text-gray-500">Sectioning images...</span>
+                {processingData?.sectionData?.sectionCount && (
+                  <span className="text-xs text-gray-400 mt-2">
+                    Found {processingData.sectionData.sectionCount} sections
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         );
       case 3: // Process with GPT-4o
@@ -571,54 +622,30 @@ export default function ProcessUI({
     }
   };
 
-  // The expanded section modal
+  // The expanded section modal - no longer needed as we use ImagePreviewModal instead
   const renderExpandedSection = () => {
     if (expandedSection === null) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg max-w-2xl w-full p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium">
-              Section {expandedSection} Detail
-            </h3>
-            <button
-              onClick={() => setExpandedSection(null)}
-              className="text-gray-400 hover:text-gray-500"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-          <div className="bg-gray-100 rounded-md aspect-video flex items-center justify-center">
-            <p className="text-gray-500">
-              Detailed view of Section {expandedSection}
-            </p>
-          </div>
-          <div className="mt-4 text-right">
-            <button
-              onClick={() => setExpandedSection(null)}
-              className="px-4 py-2 bg-gray-200 rounded-md text-gray-800 hover:bg-gray-300 transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    
+    // This function is now deprecated - we use the ImagePreviewModal component instead
+    return null;
   };
+
+  // Effect to fetch sectioned images once they're available
+  useEffect(() => {
+    // Only fetch sectioned images when we're at the sectioning step and it's complete
+    if (statuses[2] === "complete" && processingData?.convertData?.jobId) {
+      apiService.getSectionedImages(processingData.convertData.jobId)
+        .then(response => {
+          if (response.data.success) {
+            setSectionedImages(response.data.sections);
+            console.log("Fetched sectioned images:", response.data.sections);
+          }
+        })
+        .catch(error => {
+          console.error("Error fetching sectioned images:", error);
+        });
+    }
+  }, [statuses[2], processingData?.convertData?.jobId]);
 
   // Effect to create and clean up the PDF preview URL
   useEffect(() => {
