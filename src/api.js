@@ -19,7 +19,7 @@ export const convertPdf = (formData) => {
     // If backend doesn't provide conversion time, calculate it on the frontend
     if (!response.data.conversionTime) {
       const endTime = Date.now();
-      response.data.conversionTime = ((endTime - startTime) / 1000).toFixed(1);
+      response.data.conversionTime = ((endTime - startTime) / 1000).toFixed(3);
     }
     return response;
   });
@@ -31,7 +31,7 @@ export const sectionImages = (jobId) => {
     // If backend doesn't provide section time, calculate it on the frontend
     if (!response.data.sectionTime) {
       const endTime = Date.now();
-      response.data.sectionTime = ((endTime - startTime) / 1000).toFixed(1);
+      response.data.sectionTime = ((endTime - startTime) / 1000).toFixed(3);
     }
     return response;
   });
@@ -43,7 +43,7 @@ export const processGpt = (jobId) => {
     // Calculate processing time if not provided
     if (!response.data.processingTime) {
       const endTime = Date.now();
-      response.data.processingTime = ((endTime - startTime) / 1000).toFixed(1);
+      response.data.processingTime = ((endTime - startTime) / 1000).toFixed(3);
     }
     return response;
   });
@@ -55,7 +55,7 @@ export const structureJson = (jobId) => {
     // Calculate structuring time if not provided
     if (!response.data.structureTime) {
       const endTime = Date.now();
-      response.data.structureTime = ((endTime - startTime) / 1000).toFixed(1);
+      response.data.structureTime = ((endTime - startTime) / 1000).toFixed(3);
     }
     return response;
   });
@@ -67,7 +67,7 @@ export const generateXml = (jobId) => {
     // Calculate generation time if not provided
     if (!response.data.generationTime) {
       const endTime = Date.now();
-      response.data.generationTime = ((endTime - startTime) / 1000).toFixed(1);
+      response.data.generationTime = ((endTime - startTime) / 1000).toFixed(3);
     }
     return response;
   });
@@ -79,7 +79,7 @@ export const createPackage = (jobId, xmlFilePath) => {
     // Calculate packaging time if not provided
     if (!response.data.packageTime) {
       const endTime = Date.now();
-      response.data.packageTime = ((endTime - startTime) / 1000).toFixed(1);
+      response.data.packageTime = ((endTime - startTime) / 1000).toFixed(3);
     }
     return response;
   });

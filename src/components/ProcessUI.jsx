@@ -64,11 +64,11 @@ export default function ProcessUI({
             clearInterval(interval);
             // Use the actual conversion time if available
             if (processingData.convertData.conversionTime) {
-              setConvertTime(`${processingData.convertData.conversionTime} seconds`);
+              setConvertTime(`${Number(processingData.convertData.conversionTime).toFixed(3)} seconds`);
             } else {
               // Fallback to calculated time
               const endTime = Date.now();
-              const totalTime = ((endTime - startTimeRef.current) / 1000).toFixed(1);
+              const totalTime = ((endTime - startTimeRef.current) / 1000).toFixed(3);
               setConvertTime(`${totalTime} seconds`);
             }
           }
@@ -227,27 +227,7 @@ export default function ProcessUI({
                   <h5 className="text-sm font-medium text-gray-700 mb-2">
                     Conversion Progress:
                   </h5>
-                  
-                  {/* Overall progress bar */}
-                  {processingData.convertData.pageCount > 0 && (
-                    <div className="mb-4">
-                      <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>Overall Progress</span>
-                        <span>
-                          {Math.min(simulatedProgress, processingData.convertData.pageCount)} of {processingData.convertData.pageCount} pages
-                          ({Math.round((Math.min(simulatedProgress, processingData.convertData.pageCount) / processingData.convertData.pageCount) * 100)}%)
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-green-500 h-2 rounded-full transition-all duration-300" 
-                          style={{ 
-                            width: `${(Math.min(simulatedProgress, processingData.convertData.pageCount) / processingData.convertData.pageCount) * 100}%` 
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  )}
+
                   
                   <div className="space-y-2">
                     {Array.from({
@@ -309,19 +289,11 @@ export default function ProcessUI({
                               </span>
                               {isConverted && processingData?.convertData?.conversionTime && (
                                 <span className="text-xs text-gray-500">
-                                  {((processingData.convertData.conversionTime / processingData.convertData.pageCount) * (idx + 1)).toFixed(1)}s
+                                  {((processingData.convertData.conversionTime / processingData.convertData.pageCount) * (idx + 1)).toFixed(3)}s
                                 </span>
                               )}
                             </div>
-                            {/* Add progress bar */}
-                            {statuses[1] === "processing" && (
-                              <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                                <div 
-                                  className="bg-green-500 h-1.5 rounded-full transition-all duration-300" 
-                                  style={{ width: isConverted ? '100%' : '0%' }}
-                                ></div>
-                              </div>
-                            )}
+
                           </div>
                         </div>
                       );
@@ -337,7 +309,7 @@ export default function ProcessUI({
                         Total Conversion Time:
                       </span>
                       <span className="font-medium">
-                        {convertTime || `${processingData?.convertData?.conversionTime || "0"} seconds`}
+                        {convertTime || `${Number(processingData?.convertData?.conversionTime || 0).toFixed(3)} seconds`}
                       </span>
                     </div>
                     
@@ -347,7 +319,7 @@ export default function ProcessUI({
                         <div className="flex justify-between items-center mt-1">
                           <span>Average time per page:</span>
                           <span>
-                            {(processingData.convertData.conversionTime / processingData.convertData.pageCount).toFixed(2)} seconds
+                            {(processingData.convertData.conversionTime / processingData.convertData.pageCount).toFixed(3)} seconds
                           </span>
                         </div>
                       </div>

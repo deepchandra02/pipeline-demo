@@ -87,7 +87,7 @@ def convert_pdf():
                 # "images_folder": images_folder,
                 "jobId": job_id,
                 "pageCount": page_count,
-                "conversionTime": round(conversion_time, 1),
+                "conversionTime": round(conversion_time, 3),
                 "message": "PDF successfully converted to images",
             }
         )
@@ -117,7 +117,7 @@ def section_images():
                 "success": True,
                 "jobId": job_id,
                 "sectionCount": section_count,
-                "sectionTime": round(section_time, 1),
+                "sectionTime": round(section_time, 3),
                 "message": "Images successfully sectioned",
             }
         )
