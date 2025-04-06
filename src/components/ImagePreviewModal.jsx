@@ -2,24 +2,26 @@ import React, { useState, useEffect } from "react";
 
 export default function ImagePreviewModal({ image, onClose, title }) {
   const [imageSrc, setImageSrc] = useState(image);
-  
+
   // Function to try different image extensions if the original doesn't load
   const tryAlternativeExtensions = (originalSrc) => {
     // List of extensions to try
-    const extensions = ['.png', '.jpg', '.jpeg'];
-    
+    const extensions = [".png", ".jpg", ".jpeg"];
+
     // Get the base URL without extension
-    const baseSrc = originalSrc.split('.').slice(0, -1).join('.');
-    
+    const baseSrc = originalSrc.split(".").slice(0, -1).join(".");
+
     // Try each extension
     let loadAttempt = 0;
     const tryNextExtension = () => {
       if (loadAttempt >= extensions.length) return; // All attempts failed
-      
+
       const newSrc = `${baseSrc}${extensions[loadAttempt]}`;
       const img = new Image();
       img.onload = () => {
-        console.log(`Successfully loaded image with ${extensions[loadAttempt]}`);
+        console.log(
+          `Successfully loaded image with ${extensions[loadAttempt]}`
+        );
         setImageSrc(newSrc);
       };
       img.onerror = () => {
@@ -28,10 +30,10 @@ export default function ImagePreviewModal({ image, onClose, title }) {
       };
       img.src = newSrc;
     };
-    
+
     tryNextExtension();
   };
-  
+
   useEffect(() => {
     // Check if image exists, if not try alternative extensions
     const img = new Image();
@@ -39,13 +41,12 @@ export default function ImagePreviewModal({ image, onClose, title }) {
       tryAlternativeExtensions(image);
     };
     img.src = image;
-    
+
     return () => {
       img.onerror = null;
     };
   }, [image]);
 
-export default function ImagePreviewModal({ image, onClose, title }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg max-w-4xl w-full flex flex-col">
@@ -80,7 +81,7 @@ export default function ImagePreviewModal({ image, onClose, title }) {
             alt={title || "Preview"}
             className="max-h-[70vh] max-w-full object-contain"
             onError={(e) => {
-              e.target.style.display = 'none';
+              e.target.style.display = "none";
               // Show error message when image fails to load
               e.target.parentNode.innerHTML += `
                 <div class="text-center p-6">

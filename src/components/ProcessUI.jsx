@@ -21,14 +21,16 @@ export default function ProcessUI({
 
   const getFileExt = (idx) => {
     // Try different extensions in order of preference
-    return '.jpeg'; // Default to jpeg first, the backend will handle finding the actual file
+    return ".jpeg"; // Default to jpeg first, the backend will handle finding the actual file
   };
 
   // Handle image preview
   const handleImagePreview = (index) => {
     setSelectedImage({
       index,
-      src: `/api/images/${processingData?.convertData?.jobId}/page_${index + 1}${getFileExt(index)}`,
+      src: `/api/images/${processingData?.convertData?.jobId}/page_${
+        index + 1
+      }${getFileExt(index)}`,
       title: `Page ${index + 1}`,
     });
   };
@@ -46,10 +48,11 @@ export default function ProcessUI({
 
       // If we have actual conversion time, use it to calculate the simulation speed
       let intervalTime = 500; // default 500ms per page
-      
+
       if (processingData.convertData.conversionTime) {
         // If we know total conversion time, distribute it evenly across pages
-        const conversionTimeMs = parseFloat(processingData.convertData.conversionTime) * 1000;
+        const conversionTimeMs =
+          parseFloat(processingData.convertData.conversionTime) * 1000;
         intervalTime = conversionTimeMs / pageCount;
         // Make sure it's not too fast for UI
         intervalTime = Math.max(100, intervalTime);
@@ -64,11 +67,18 @@ export default function ProcessUI({
             clearInterval(interval);
             // Use the actual conversion time if available
             if (processingData.convertData.conversionTime) {
-              setConvertTime(`${Number(processingData.convertData.conversionTime).toFixed(3)} seconds`);
+              setConvertTime(
+                `${Number(processingData.convertData.conversionTime).toFixed(
+                  3
+                )} seconds`
+              );
             } else {
               // Fallback to calculated time
               const endTime = Date.now();
-              const totalTime = ((endTime - startTimeRef.current) / 1000).toFixed(3);
+              const totalTime = (
+                (endTime - startTimeRef.current) /
+                1000
+              ).toFixed(3);
               setConvertTime(`${totalTime} seconds`);
             }
           }
@@ -228,7 +238,6 @@ export default function ProcessUI({
                     Conversion Progress:
                   </h5>
 
-                  
                   <div className="space-y-2">
                     {Array.from({
                       length: processingData.convertData.pageCount,
@@ -285,15 +294,22 @@ export default function ProcessUI({
                           <div className="flex-1">
                             <div className="flex justify-between">
                               <span className="text-sm text-gray-700">
-                                Page {idx + 1} of {processingData.convertData.pageCount}
+                                Page {idx + 1} of{" "}
+                                {processingData.convertData.pageCount}
                               </span>
-                              {isConverted && processingData?.convertData?.conversionTime && (
-                                <span className="text-xs text-gray-500">
-                                  {((processingData.convertData.conversionTime / processingData.convertData.pageCount) * (idx + 1)).toFixed(3)}s
-                                </span>
-                              )}
+                              {isConverted &&
+                                processingData?.convertData?.conversionTime && (
+                                  <span className="text-xs text-gray-500">
+                                    {(
+                                      (processingData.convertData
+                                        .conversionTime /
+                                        processingData.convertData.pageCount) *
+                                      (idx + 1)
+                                    ).toFixed(3)}
+                                    s
+                                  </span>
+                                )}
                             </div>
-
                           </div>
                         </div>
                       );
@@ -302,24 +318,32 @@ export default function ProcessUI({
                 </div>
 
                 {/* Conversion time */}
-                {(statuses[1] === "complete" || processingData?.convertData?.conversionTime) && (
+                {(statuses[1] === "complete" ||
+                  processingData?.convertData?.conversionTime) && (
                   <div className="mt-4 pt-4 border-t border-gray-100">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">
                         Total Conversion Time:
                       </span>
                       <span className="font-medium">
-                        {convertTime || `${Number(processingData?.convertData?.conversionTime || 0).toFixed(3)} seconds`}
+                        {convertTime ||
+                          `${Number(
+                            processingData?.convertData?.conversionTime || 0
+                          ).toFixed(3)} seconds`}
                       </span>
                     </div>
-                    
+
                     {/* Performance metrics - showing when available */}
                     {processingData?.convertData?.conversionTime && (
                       <div className="mt-2 text-xs text-gray-500">
                         <div className="flex justify-between items-center mt-1">
                           <span>Average time per page:</span>
                           <span>
-                            {(processingData.convertData.conversionTime / processingData.convertData.pageCount).toFixed(3)} seconds
+                            {(
+                              processingData.convertData.conversionTime /
+                              processingData.convertData.pageCount
+                            ).toFixed(3)}{" "}
+                            seconds
                           </span>
                         </div>
                       </div>
@@ -467,14 +491,19 @@ export default function ProcessUI({
                       onClick={() => handleImagePreview(idx)}
                     >
                       {/* Actual image thumbnail */}
-                      <div className="absolute inset-0 flex items-center justify-center bg-gray-100" style={{ overflow: 'hidden' }}>
+                      <div
+                        className="absolute inset-0 flex items-center justify-center bg-gray-100"
+                        style={{ overflow: "hidden" }}
+                      >
                         <img
-                          src={`/api/images/${processingData.convertData.jobId}/page_${idx + 1}${getFileExt(idx)}`}
+                          src={`/api/images/${
+                            processingData.convertData.jobId
+                          }/page_${idx + 1}${getFileExt(idx)}`}
                           alt={`Page ${idx + 1}`}
                           className="object-cover h-full w-full"
                           onError={(e) => {
                             // Fallback when image can't be loaded
-                            e.target.style.display = 'none';
+                            e.target.style.display = "none";
                             e.target.parentNode.innerHTML = `<div class="flex flex-col items-center justify-center h-full w-full">
                               <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -496,62 +525,25 @@ export default function ProcessUI({
                 </div>
 
                 {/* View all images button */}
-                <button 
-                  className="mt-4 w-full text-center py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium text-gray-700 transition-colors flex items-center justify-center"
-                  onClick={() => {
-                    // Fetch the list of images for this job and open them in a gallery view
-                    fetch(`/api/image-list/${processingData?.convertData?.jobId}`)
-                      .then(res => res.json())
-                      .then(data => {
-                        console.log('Image list response:', data);
-                        if (data.success && data.count > 0) {
-                          alert(`${data.count} images available. View individual images by clicking on thumbnails.`);
-                        } else if (data.success && data.count === 0) {
-                          // Try fetch with just the first 4 characters of jobId (form code)
-                          const formCode = processingData?.convertData?.jobId.substring(0, 4);
-                          console.log('Trying with form code:', formCode);
-                          fetch(`/api/image-list/${formCode}`)
-                            .then(res => res.json())
-                            .then(formData => {
-                              console.log('Form code image search:', formData);
-                              if (formData.success && formData.count > 0) {
-                                alert(`${formData.count} images available using form code. View individual images by clicking on thumbnails.`);
-                              } else {
-                                alert(`No images found at path: ${data.path}\nPlease check server console logs for details.`);
-                              }
-                            })
-                            .catch(err => {
-                              console.error('Error in fallback search:', err);
-                              alert(`No images found. Error in fallback search.`);
-                            });
-                        } else {
-                          alert(`Could not retrieve image list. Path: ${data.path}\nPlease check server console logs for details.`);
-                        }
-                      })
-                      .catch(err => {
-                        console.error('Error fetching image list:', err);
-                        alert('Error retrieving images.');
-                      });
-                  }}
-                >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="h-4 w-4 mr-2" 
-                    fill="none" 
-                    viewBox="0 0 24 24" 
+                <button className="mt-4 w-full text-center py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium text-gray-700 transition-colors flex items-center justify-center">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" 
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                     />
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" 
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                     />
                   </svg>
                   View All Images
