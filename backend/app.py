@@ -113,13 +113,28 @@ def section_images():
         sections_directory = process_form_images(images_folder)
         end_time = datetime.datetime.now()
         section_time = (end_time - start_time).total_seconds()
-        section_count = len(os.listdir(sections_directory))
+        
+        # Get list of section files
+        section_files = sorted(os.listdir(sections_directory))
+        section_count = len(section_files)
+        
+        # Create a list of section info objects
+        sections = []
+        for i, filename in enumerate(section_files):
+            section_path = os.path.join(sections_directory, filename)
+            sections.append({
+                "id": i + 1,
+                "name": filename,
+                "path": f"{job_id}/{job_id}_sections/{filename}"
+            })
+        
         return jsonify(
             {
                 "success": True,
                 "jobId": job_id,
                 "sectionCount": section_count,
                 "sectionTime": round(section_time, 3),
+                "sections": sections,
                 "message": "Images successfully sectioned",
             }
         )
@@ -360,55 +375,75 @@ def home():
     return """<!doctype html><html lang="en"><body><div class="container"><h1>Welcome to the Flask API</h1></div></body></html>"""
 
 
-@app.route("/api/images/<job_id>/<path:page_name>")
-def get_image(job_id, page_name):
+@app.route("/api/images/<job_id>/<path:image_path>")
+def get_image(job_id, image_path):
     # Construct the path to the image file
-    image_path = os.path.join(images_directory, job_id, page_name)
-
+    full_path = os.path.join(images_directory, job_id, image_path)
+    
     # Get correct mime type based on extension
-    file_ext = os.path.splitext(page_name)[1].lower()
+    file_ext = os.path.splitext(image_path)[1].lower()
     mime_type = "image/jpeg" if file_ext in (".jpg", ".jpeg") else "image/png"
 
     # Debug information
-    print(f"Requested image: {image_path}")
-    print(f"File exists: {os.path.exists(image_path)}")
-
+    print(f"Requested image: {full_path}")
+    print(f"File exists: {os.path.exists(full_path)}")
+    
     # Check if the file exists
-    if os.path.exists(image_path):
-        return send_file(image_path, mimetype=mime_type)
+    if os.path.exists(full_path):
+        return send_file(full_path, mimetype=mime_type)
     else:
-        # Try to find the image with a different pattern
-        # Sometimes the page names might follow a different format
+        # Try alternative extensions
+        base_path = os.path.splitext(full_path)[0]
+        for ext in [".jpeg", ".jpg", ".png"]:
+            alt_path = f"{base_path}{ext}"
+            if os.path.exists(alt_path):
+                print(f"Found alternative file: {alt_path}")
+                alt_mime_type = "image/jpeg" if ext in (".jpg", ".jpeg") else "image/png"
+                return send_file(alt_path, mimetype=alt_mime_type)
+                
+        # If we're here, no alternatives worked either
         try:
-            # List all files in the directory
-            directory = os.path.dirname(image_path)
+            # List files in directory for debugging
+            directory = os.path.dirname(full_path)
             if os.path.exists(directory):
                 files = os.listdir(directory)
                 print(f"Files in directory {directory}: {files}")
-
-                # Try to find a file that might match by name pattern
-                page_num = page_name.replace("page_", "").split(".")[0]
-                allowed_extensions = (".png", ".jpg", ".jpeg")
-                potential_matches = [
-                    f
-                    for f in files
-                    if page_num in f
-                    and any(f.lower().endswith(ext) for ext in allowed_extensions)
-                ]
-
-                if potential_matches:
-                    alternative_path = os.path.join(directory, potential_matches[0])
-                    print(f"Found alternative file: {alternative_path}")
-                    # Determine the mime type based on file extension
-                    file_ext = os.path.splitext(alternative_path)[1].lower()
-                    mime_type = (
-                        "image/jpeg" if file_ext in (".jpg", ".jpeg") else "image/png"
-                    )
-                    return send_file(alternative_path, mimetype=mime_type)
+                
+                # For page images, try to find a match by page number
+                if "page_" in image_path:
+                    page_num = image_path.replace("page_", "").split(".")[0]
+                    allowed_extensions = (".png", ".jpg", ".jpeg")
+                    potential_matches = [
+                        f for f in files
+                        if page_num in f and any(f.lower().endswith(ext) for ext in allowed_extensions)
+                    ]
+                    
+                    if potential_matches:
+                        alternative_path = os.path.join(directory, potential_matches[0])
+                        print(f"Found alternative file by page number: {alternative_path}")
+                        file_ext = os.path.splitext(alternative_path)[1].lower()
+                        mime_type = "image/jpeg" if file_ext in (".jpg", ".jpeg") else "image/png"
+                        return send_file(alternative_path, mimetype=mime_type)
+                        
+                # For section images, try to find a match by section identifier
+                if "_sections/" in image_path:
+                    section_identifier = image_path.split("_sections/")[1].split(".")[0]
+                    allowed_extensions = (".png", ".jpg", ".jpeg")
+                    potential_matches = [
+                        f for f in files
+                        if section_identifier in f and any(f.lower().endswith(ext) for ext in allowed_extensions)
+                    ]
+                    
+                    if potential_matches:
+                        alternative_path = os.path.join(directory, potential_matches[0])
+                        print(f"Found alternative file by section: {alternative_path}")
+                        file_ext = os.path.splitext(alternative_path)[1].lower()
+                        mime_type = "image/jpeg" if file_ext in (".jpg", ".jpeg") else "image/png"
+                        return send_file(alternative_path, mimetype=mime_type)
         except Exception as e:
             print(f"Error in file lookup: {str(e)}")
-
-        return jsonify({"error": "Image not found", "path": image_path}), 404
+            
+        return jsonify({"error": "Image not found", "path": full_path}), 404
 
 
 if __name__ == "__main__":
