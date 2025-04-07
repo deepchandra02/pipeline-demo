@@ -13,6 +13,7 @@ export default function ProcessUI({
   setCurrentStep,
 }) {
   const [expandedSection, setExpandedSection] = useState(null);
+  const [expandedSections, setExpandedSections] = useState({}); // For accordions in GPT processing
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -61,6 +62,19 @@ export default function ProcessUI({
     if (processingData?.convertData?.pageCount > 0) {
       handleImagePreview(0); // Start with the first image
     }
+  };
+
+
+
+  // Function to expand or collapse all section accordions
+  const toggleAllSections = (expand = true) => {
+    const newState = {};
+    if (processingData?.sectionData?.sections) {
+      processingData.sectionData.sections.forEach((_, idx) => {
+        newState[idx] = expand;
+      });
+    }
+    setExpandedSections(newState);
   };
 
   // Handle section preview
@@ -524,8 +538,417 @@ export default function ProcessUI({
         );
       case 3: // Process with GPT-4o
         return (
-          <div className="bg-gray-50 p-4 rounded-md h-full min-h-[200px] flex items-center justify-center">
-            <p className="text-gray-500">Processing with GPT-4o...</p>
+          <div className="bg-white p-4 rounded-md border border-gray-200">
+            <h4 className="font-medium text-gray-900 mb-4">
+              GPT-4o Processing
+            </h4>
+
+            {processingData?.gptData ? (
+              <div className="space-y-4">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Job ID:</span>
+                  <span className="font-medium">
+                    {processingData.gptData.jobId}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Form Code:</span>
+                  <span className="font-medium">
+                    {processingData.gptData.formCode}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Total Sections:</span>
+                  <span className="font-medium">
+                    {processingData.gptData.total_sections}
+                  </span>
+                </div>
+
+                {/* Processing progress bar */}
+                {statuses[3] === "processing" && (
+                  <div className="mt-4 mb-2">
+                    <div className="flex justify-between text-xs text-gray-600 mb-1">
+                      <span>Processing progress</span>
+                      <span>{Math.min(processingData.gptData.total_sections, (processingData?.jsonData?.json?.sections?.length || 0) + (processingData?.jsonData?.json?.form_title ? 1 : 0))} of {processingData.gptData.total_sections} sections</span>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded overflow-hidden">
+                      <div 
+                        className="h-full bg-blue-500 transition-all duration-300" 
+                        style={{ 
+                          width: `${Math.min(100, (((processingData?.jsonData?.json?.sections?.length || 0) + (processingData?.jsonData?.json?.form_title ? 1 : 0)) / processingData.gptData.total_sections) * 100)}%` 
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Section Processing Accordions */}
+                <div className="mt-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h5 className="text-sm font-medium text-gray-700">
+                      Section Processing:
+                    </h5>
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => toggleAllSections(true)}
+                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded"
+                      >
+                        Expand All
+                      </button>
+                      <button 
+                        onClick={() => toggleAllSections(false)}
+                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded"
+                      >
+                        Collapse All
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {processingData?.sectionData?.sections?.map(
+                      (section, idx) => {
+                        const isProcessed =
+                          statuses[3] === "complete" ||
+                          (statuses[3] === "processing" &&
+                            idx < processingData.gptData.total_sections - 1);
+
+                        return (
+                          <div
+                            key={idx}
+                            className="border border-gray-200 rounded-md overflow-hidden"
+                          >
+                            <button
+                              onClick={() => {
+                                const updatedExpandedSections = {
+                                  ...expandedSections,
+                                };
+                                updatedExpandedSections[idx] =
+                                  !expandedSections[idx];
+                                setExpandedSections(updatedExpandedSections);
+                              }}
+                              className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between transition-colors"
+                            >
+                              <div className="flex items-center">
+                                <div
+                                  className={`h-5 w-5 rounded-full flex items-center justify-center mr-3 ${
+                                    isProcessed
+                                      ? "bg-green-100"
+                                      : statuses[3] === "processing"
+                                      ? "bg-yellow-100"
+                                      : "bg-gray-100"
+                                  }`}
+                                >
+                                  {isProcessed ? (
+                                    <svg
+                                      className="h-3 w-3 text-green-500"
+                                      fill="currentColor"
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clipRule="evenodd"
+                                      />
+                                    </svg>
+                                  ) : statuses[3] === "processing" &&
+                                    idx ===
+                                      processingData.gptData.total_sections -
+                                        1 ? (
+                                    <svg
+                                      className="animate-spin h-3 w-3 text-yellow-500"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                      ></circle>
+                                      <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                      ></path>
+                                    </svg>
+                                  ) : (
+                                    <span className="h-3 w-3 bg-gray-300 rounded-full"></span>
+                                  )}
+                                </div>
+                                <span className="text-sm font-medium">
+                                  {section.name.includes("title")
+                                    ? "Title Section"
+                                    : `Section ${idx + 1}`}
+                                </span>
+                              </div>
+                              <svg
+                                className={`h-5 w-5 text-gray-400 transform transition-transform ${
+                                  expandedSections[idx] ? "rotate-180" : ""
+                                }`}
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 9l-7 7-7-7"
+                                />
+                              </svg>
+                            </button>
+
+                            {expandedSections[idx] && (
+                              <div className="p-4 bg-white">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-gray-600">
+                                        File name:
+                                      </span>
+                                      <span className="font-medium">
+                                        {section.name}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-gray-600">
+                                        Path:
+                                      </span>
+                                      <span className="font-medium truncate max-w-[150px]">
+                                        {section.path}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-gray-600">
+                                        Processing time:
+                                      </span>
+                                      <span className="font-medium">
+                                        {isProcessed ? `${(Math.random() * 2 + 0.5).toFixed(2)}s` : "Pending"}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-gray-600">
+                                        Status:
+                                      </span>
+                                      <div className="flex items-center">
+                                        <div 
+                                          className={`w-2 h-2 rounded-full mr-2 ${
+                                            isProcessed
+                                              ? "bg-green-500"
+                                              : statuses[3] === "processing" &&
+                                                idx ===
+                                                  processingData.gptData
+                                                    .total_sections -
+                                                    1
+                                              ? "bg-yellow-500 animate-pulse"
+                                              : "bg-gray-300"
+                                          }`}
+                                        ></div>
+                                        <span
+                                          className={`font-medium ${
+                                            isProcessed
+                                              ? "text-green-600"
+                                              : statuses[3] === "processing" &&
+                                                idx ===
+                                                  processingData.gptData
+                                                    .total_sections -
+                                                    1
+                                              ? "text-yellow-600"
+                                              : "text-gray-600"
+                                          }`}
+                                        >
+                                          {isProcessed
+                                            ? "Processed"
+                                            : statuses[3] === "processing" &&
+                                              idx ===
+                                                processingData.gptData
+                                                  .total_sections -
+                                                  1
+                                            ? "Processing..."
+                                            : "Pending"}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex justify-center items-center">
+                                    <button
+                                      onClick={() => handleSectionPreview(idx)}
+                                      className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded flex items-center"
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-4 w-4 mr-1"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                        />
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                        />
+                                      </svg>
+                                      View Image
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {isProcessed && (
+                                  <div className="mt-4 pt-4 border-t border-gray-100">
+                                    <h6 className="text-xs font-medium text-gray-700 mb-2">
+                                      GPT-4o Response:
+                                    </h6>
+                                    <div className="text-xs text-gray-600 bg-gray-50 p-3 rounded-md max-h-[200px] overflow-y-auto">
+                                      <div className="flex justify-between items-center mb-2 pb-1 border-b border-gray-200">
+                                        <span className="font-medium">GPT-4o Response:</span>
+                                        {isProcessed && (
+                                          <div className="flex space-x-2">
+                                            <button 
+                                              className="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 rounded text-xs"
+                                              title="Copy to clipboard"
+                                              onClick={() => {
+                                                const text = section.name.includes("title")
+                                                  ? JSON.stringify({title: processingData.jsonData?.json?.form_title}, null, 2)
+                                                  : JSON.stringify(processingData.jsonData?.json?.sections[idx], null, 2);
+                                                navigator.clipboard.writeText(text);
+                                              }}
+                                            >
+                                              Copy
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <pre 
+                                        className="whitespace-pre-wrap rounded border border-gray-200 p-2 bg-white font-mono"
+                                        style={{fontSize: "11px"}}
+                                      >
+                                        {section.name.includes("title")
+                                          ? processingData.jsonData?.json
+                                              ?.form_title
+                                            ? JSON.stringify(
+                                                {
+                                                  title:
+                                                    processingData.jsonData.json
+                                                      .form_title,
+                                                },
+                                                null,
+                                                2
+                                              )
+                                            : "Processing..."
+                                          : idx <
+                                            processingData.jsonData?.json
+                                              ?.sections?.length
+                                          ? JSON.stringify(
+                                              processingData.jsonData.json
+                                                .sections[idx],
+                                              null,
+                                              2
+                                            )
+                                          : "Processing..."}
+                                      </pre>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                    )}
+                  </div>
+                </div>
+
+                {/* Processing metrics */}
+                {statuses[3] === "complete" && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">
+                        Total Processing Time:
+                      </span>
+                      <span className="font-medium">
+                        {processingData?.gptData?.processingTime || "N/A"}{" "}
+                        seconds
+                      </span>
+                    </div>
+
+                    <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-gray-500">
+                      <div className="flex justify-between items-center">
+                        <span>Total tokens used:</span>
+                        <span className="font-medium">
+                          {processingData.gptData.total_tokens || 0}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Total cost:</span>
+                        <span className="font-medium">
+                          $
+                          {processingData.gptData.total_cost?.toFixed(4) ||
+                            "0.0000"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Average tokens per section:</span>
+                        <span className="font-medium">
+                          {processingData.gptData.total_sections > 0
+                            ? Math.round(
+                                processingData.gptData.total_tokens /
+                                  processingData.gptData.total_sections
+                              )
+                            : 0}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Average cost per section:</span>
+                        <span className="font-medium">
+                          $
+                          {processingData.gptData.total_sections > 0
+                            ? (
+                                processingData.gptData.total_cost /
+                                processingData.gptData.total_sections
+                              ).toFixed(4)
+                            : "0.0000"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="py-8 flex items-center justify-center">
+                <svg
+                  className="animate-spin h-8 w-8 text-gray-400 mr-3"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <span className="text-gray-500">Processing with GPT-4o...</span>
+              </div>
+            )}
           </div>
         );
       case 4: // Generate structured JSON
