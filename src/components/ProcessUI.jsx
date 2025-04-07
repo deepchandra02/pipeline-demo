@@ -1001,8 +1001,8 @@ export default function ProcessUI({
                         </div>
 
                         {/* Overlay with section label and hover effect */}
-                        <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-10 transition-opacity flex items-center justify-center">
-                          <span className="px-2 py-1 bg-black bg-opacity-50 text-white rounded font-semibold text-xs">
+                        <div className="absolute inset-0 bg-black opacity-30 group-hover:bg-opacity-10 transition-opacity flex items-center justify-center">
+                          <span className="px-2 py-1 text-white rounded font-semibold text-xs">
                             {section.name.includes("title")
                               ? "Title"
                               : `Section ${idx + 1}`}
